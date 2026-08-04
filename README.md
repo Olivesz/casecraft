@@ -1,5 +1,7 @@
 # casecraft
 
+[![CI](https://github.com/Olivesz/casecraft/actions/workflows/ci.yml/badge.svg)](https://github.com/Olivesz/casecraft/actions/workflows/ci.yml)
+
 Spoken consulting case interview practice, run by Claude.
 
 Open any Claude session and say **"run me through a case."** A browser tab opens,
