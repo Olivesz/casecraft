@@ -1,0 +1,32 @@
+[build-system]
+requires = ["setuptools>=68"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "casecraft"
+version = "0.1.0"
+description = "Spoken consulting case interview practice, run by Claude through MCP"
+requires-python = ">=3.11"
+dependencies = [
+    "fastmcp>=3.0",
+    "fastapi>=0.110",
+    "uvicorn[standard]>=0.29",
+]
+
+[project.optional-dependencies]
+dev = ["pytest>=8.0"]
+# Optional local speech-to-text. The browser's Web Speech API is the default;
+# this swaps in on-device Whisper for privacy and accuracy.
+local-stt = ["faster-whisper>=1.0"]
+
+[project.scripts]
+casecraft = "casecraft.__main__:main"
+
+[tool.setuptools]
+packages = ["casecraft"]
+
+[tool.setuptools.package-data]
+casecraft = ["static/*.html"]
+
+[tool.pytest.ini_options]
+testpaths = ["tests"]

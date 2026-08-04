@@ -1,0 +1,957 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>casecraft — interview room</title>
+<style>
+  :root{
+    --bg:#0e1116; --panel:#161a21; --line:#232935;
+    --ink:#e7e9ee; --muted:#8b93a1; --dim:#5a6473;
+    --gold:#d4a24c; --live:#e0574f; --ok:#4fb286; --warn:#e0a34f;
+    --font:-apple-system,BlinkMacSystemFont,"Segoe UI",Inter,system-ui,sans-serif;
+    --serif:"Iowan Old Style","Palatino Linotype",Palatino,Georgia,serif;
+  }
+  *{box-sizing:border-box;margin:0;padding:0}
+  /* Fixed-height shell: header, controls and footer never move, and only the
+     stage scrolls. The "Answer complete" button must be reachable at every
+     moment of an answer — it cannot be allowed to scroll away. */
+  body{
+    background:var(--bg); color:var(--ink); font-family:var(--font);
+    height:100dvh; display:flex; flex-direction:column; overflow:hidden;
+    -webkit-font-smoothing:antialiased;
+  }
+
+  header{
+    display:flex; align-items:center; justify-content:space-between;
+    padding:14px 22px; border-bottom:1px solid var(--line);
+  }
+  .brand{font-family:var(--serif); font-size:17px; letter-spacing:.02em}
+  .brand span{color:var(--gold)}
+  .meta{display:flex; gap:18px; align-items:center; font-size:12.5px; color:var(--muted)}
+  .pill{
+    padding:4px 10px; border:1px solid var(--line); border-radius:99px;
+    background:var(--panel); font-variant-numeric:tabular-nums;
+  }
+  select{
+    background:var(--panel); color:var(--ink); border:1px solid var(--line);
+    border-radius:8px; padding:5px 8px; font-size:12.5px; font-family:inherit;
+  }
+
+  /* `justify-content:center` clips overflow at the top once an exhibit and a
+     feedback panel are both up. `margin:auto` on the inner stage centers when
+     there's room and scrolls cleanly when there isn't. */
+  main{flex:1; display:flex; padding:28px 22px; overflow-y:auto}
+  .stage{
+    margin:auto; display:flex; flex-direction:column; align-items:center;
+    gap:22px; text-align:center; width:100%;
+  }
+
+  /* ── whose turn it is ─────────────────────────────────────── */
+  .floor{
+    display:inline-flex; align-items:center; gap:9px; padding:7px 16px;
+    border-radius:99px; border:1px solid var(--line); background:var(--panel);
+    font-size:12.5px; letter-spacing:.05em; text-transform:uppercase;
+    color:var(--muted); transition:.25s;
+  }
+  .floor .dot{width:8px; height:8px; border-radius:50%; background:var(--dim); transition:.25s}
+  /* Two states only. Either the room is theirs to speak into, or it isn't —
+     splitting "interviewer talking" from "waiting" gave three colours to read
+     when the candidate only ever needs one question answered: is it my turn? */
+  body[data-floor="interviewer"] .floor,
+  body[data-floor="waiting"] .floor{border-color:#3d5a80; color:#9dc0e8;
+    background:rgba(61,90,128,.13)}
+  body[data-floor="interviewer"] .floor .dot,
+  body[data-floor="waiting"] .floor .dot{background:#7fa6d4;
+    animation:pulse 1.2s ease-in-out infinite}
+  body[data-floor="candidate"] .floor{border-color:var(--gold); color:#e8c47f;
+    background:rgba(212,162,76,.13)}
+  body[data-floor="candidate"] .floor .dot{background:var(--gold);
+    animation:pulse 1.2s ease-in-out infinite}
+  @keyframes pulse{0%,100%{opacity:1}50%{opacity:.35}}
+
+  /* Live proof the mic is actually hearing you. */
+  .meter{width:min(760px,100%); height:4px; border-radius:99px; background:var(--line);
+         overflow:hidden; opacity:0; transition:opacity .25s}
+  body[data-floor="candidate"] .meter{opacity:1}
+  .meter i{display:block; height:100%; width:0%; background:var(--gold);
+           border-radius:99px; transition:width .09s linear}
+
+  /* ── state orb ────────────────────────────────────────────── */
+  .orb-wrap{position:relative; width:132px; height:132px; display:grid; place-items:center}
+  .orb{
+    width:96px; height:96px; border-radius:50%;
+    background:radial-gradient(circle at 35% 30%, #2b3340, #171c24);
+    border:1px solid var(--line); transition:.35s ease;
+    display:grid; place-items:center;
+  }
+  .orb svg{width:34px; height:34px; fill:none; stroke:var(--dim);
+           stroke-width:1.7; stroke-linecap:round; transition:.3s}
+  body[data-phase="speaking"] .orb{border-color:#3d5a80; box-shadow:0 0 0 8px rgba(61,90,128,.10)}
+  body[data-phase="speaking"] .orb svg{stroke:#7fa6d4}
+  body[data-phase="listening"] .orb{border-color:var(--gold);
+    box-shadow:0 0 0 10px rgba(212,162,76,.10); animation:breathe 2.4s ease-in-out infinite}
+  body[data-phase="listening"] .orb svg{stroke:var(--gold)}
+  body[data-phase="thinking"] .orb{border-color:var(--gold)}
+  body[data-phase="thinking"] .orb svg{stroke:var(--gold); animation:spin 1.6s linear infinite}
+  @keyframes breathe{0%,100%{transform:scale(1)}50%{transform:scale(1.045)}}
+  @keyframes spin{to{transform:rotate(360deg)}}
+
+  .ring{position:absolute; inset:0; transform:rotate(-90deg); pointer-events:none}
+  .ring circle{fill:none; stroke-width:2.5; stroke-linecap:round}
+  .ring .track{stroke:var(--line)}
+  .ring .prog{stroke:var(--gold); transition:stroke-dashoffset .3s linear, stroke .3s}
+  .ring.over .prog{stroke:var(--warn)}
+
+  .status{font-size:19px; letter-spacing:-.01em}
+  .sub{font-size:13.5px; color:var(--muted); max-width:52ch; line-height:1.55}
+  .clock{font-size:13px; color:var(--dim); font-variant-numeric:tabular-nums; letter-spacing:.04em}
+
+  /* ── conversation (text mode) ─────────────────────────────── */
+  .convo{width:min(760px,100%); display:none; flex-direction:column; gap:12px; text-align:left}
+  body[data-mode="text"] .convo{display:flex}
+  /* Text mode replaces the audio machinery entirely — no orb, no meter, no
+     live transcript panel. The conversation IS the interface. */
+  body[data-mode="text"] .orb-wrap,
+  body[data-mode="text"] .meter,
+  body[data-mode="text"] .transcript,
+  body[data-mode="text"] #mute{display:none}
+  body[data-mode="text"] .sub{display:none}
+  .turn{padding:13px 16px; border-radius:12px; font-size:14.5px; line-height:1.6;
+        border:1px solid var(--line); max-width:88%}
+  .turn.interviewer{background:var(--panel); align-self:flex-start;
+                    border-left:3px solid #3d5a80}
+  .turn.candidate{background:rgba(212,162,76,.09); align-self:flex-end;
+                  border-right:3px solid var(--gold)}
+  .turn .who{font-size:10.5px; letter-spacing:.1em; text-transform:uppercase;
+             color:var(--muted); margin-bottom:5px}
+  .composer{width:min(760px,100%); display:none; gap:10px}
+  body[data-mode="text"] .composer{display:flex}
+  .composer textarea{
+    flex:1; background:var(--panel); border:1px solid var(--line); border-radius:12px;
+    color:var(--ink); font-family:inherit; font-size:15px; padding:13px 15px;
+    resize:vertical; min-height:76px; line-height:1.55;
+  }
+  .composer textarea:focus{outline:none; border-color:var(--gold)}
+  .composer textarea:disabled{opacity:.45}
+
+  /* ── transcript ───────────────────────────────────────────── */
+  .transcript{
+    width:min(760px,100%); min-height:104px; background:var(--panel);
+    border:1px solid var(--line); border-radius:14px; padding:18px 20px;
+    text-align:left; font-size:15.5px; line-height:1.65; color:var(--ink);
+  }
+  .transcript:empty::before{
+    content:"Your answer appears here as you speak."; color:var(--dim); font-style:italic;
+  }
+  .transcript .interim{color:var(--muted)}
+  .transcript[contenteditable="true"]{outline:1px solid var(--gold); outline-offset:2px}
+
+  /* ── controls (pinned, outside the scroll area) ───────────── */
+  .controls{
+    display:flex; gap:10px; flex-wrap:wrap; justify-content:center;
+    padding:14px 22px; border-top:1px solid var(--line); background:var(--panel);
+  }
+  button{
+    font-family:inherit; font-size:14px; padding:11px 20px; border-radius:10px;
+    border:1px solid var(--line); background:var(--panel); color:var(--ink);
+    cursor:pointer; transition:.18s;
+  }
+  button:hover:not(:disabled){border-color:var(--dim); background:#1b2029}
+  button:disabled{opacity:.35; cursor:not-allowed}
+  button.primary{background:var(--gold); border-color:var(--gold); color:#1a1408; font-weight:600}
+  button.primary:hover:not(:disabled){background:#e0b062; border-color:#e0b062}
+  kbd{
+    font:inherit; font-size:11px; padding:1px 5px; border-radius:4px;
+    background:rgba(255,255,255,.09); border:1px solid var(--line); margin-left:6px;
+  }
+
+  /* ── exhibit ──────────────────────────────────────────────── */
+  .exhibit{
+    width:min(860px,100%); background:var(--panel); border:1px solid var(--line);
+    border-radius:14px; padding:20px; text-align:left; display:none;
+  }
+  .exhibit.on{display:block}
+  .exhibit h3{font-family:var(--serif); font-size:16px; font-weight:600; margin-bottom:14px}
+  .exhibit img{max-width:100%; border-radius:8px}
+  .exhibit .note{font-size:12.5px; color:var(--dim); margin-top:10px}
+  .exhibit .exbody{font-size:13.5px; line-height:1.65; white-space:pre-wrap;
+                   font-variant-numeric:tabular-nums; margin-bottom:10px}
+  body[data-mode="text"] .gate-pace{display:none}   /* pace means nothing typed */
+  table{border-collapse:collapse; width:100%; font-size:13.5px; font-variant-numeric:tabular-nums}
+  th,td{padding:8px 12px; text-align:right; border-bottom:1px solid var(--line)}
+  th:first-child,td:first-child{text-align:left}
+  th{color:var(--muted); font-weight:500; font-size:12px; text-transform:uppercase; letter-spacing:.05em}
+
+  /* ── feedback ─────────────────────────────────────────────── */
+  .feedback{
+    width:min(760px,100%); background:var(--panel); border:1px solid var(--line);
+    border-left:3px solid var(--gold); border-radius:12px; padding:18px 20px;
+    text-align:left; display:none;
+  }
+  .feedback.on{display:block}
+  .feedback.correct{border-left-color:var(--ok)}
+  .feedback.wrong{border-left-color:var(--live)}
+  .verdict{font-size:12px; text-transform:uppercase; letter-spacing:.09em;
+           color:var(--muted); margin-bottom:8px}
+  .fnote{font-size:15px; line-height:1.6; margin-bottom:12px}
+  .notes{list-style:none; display:flex; flex-direction:column; gap:7px}
+  .notes li{font-size:13.5px; color:var(--muted); line-height:1.55; padding-left:15px; position:relative}
+  .notes li::before{content:"\203A"; position:absolute; left:0; color:var(--gold)}
+
+  footer{padding:11px 22px; border-top:1px solid var(--line);
+         font-size:11.5px; color:var(--dim); display:flex;
+         justify-content:space-between; gap:14px; flex-wrap:wrap}
+  .warn{color:var(--warn)}
+  #gate{position:fixed; inset:0; z-index:50; display:none; place-items:center;
+        background:rgba(8,10,14,.94); backdrop-filter:blur(6px)}
+  body.gated #gate{display:grid}
+  .gate-card{width:min(520px,92vw); background:var(--panel); border:1px solid var(--line);
+             border-radius:18px; padding:34px 32px; text-align:center}
+  .gate-kicker{font-size:11.5px; letter-spacing:.14em; text-transform:uppercase;
+               color:var(--gold); margin-bottom:12px}
+  .gate-card h1{font-family:var(--serif); font-size:26px; font-weight:600;
+                line-height:1.25; margin-bottom:16px}
+  .gate-note{font-size:13.5px; color:var(--muted); line-height:1.6; margin-bottom:24px}
+  .gate-pace{display:block; font-size:12.5px; color:var(--muted); margin-bottom:22px}
+  .gate-pace select{display:block; width:100%; margin-top:7px; padding:9px 10px; font-size:13.5px}
+  .gate-go{width:100%; font-size:15.5px; padding:14px}
+  .gate-hint{font-size:11.5px; color:var(--dim); margin-top:14px}
+
+  #lock{display:none; padding:11px 22px; background:var(--gold); color:#1a1408;
+        font-size:13.5px; font-weight:600; text-align:center; cursor:pointer}
+  body.locked #lock{display:block}
+</style>
+</head>
+<body data-phase="idle">
+
+<div id="lock">Click anywhere to enable audio — your browser blocks sound until you do.</div>
+
+<div id="gate">
+  <div class="gate-card">
+    <div class="gate-kicker">Case interview</div>
+    <h1 id="gateTitle">Loading…</h1>
+    <p class="gate-note">The case is read aloud. You will not see the question on screen —
+       that's the point. Speak your answers, and press Done when you finish each one.</p>
+    <label class="gate-pace">Pace
+      <select id="gateSpeed">
+        <option value="slow">Slow — learning a new case type</option>
+        <option value="moderate" selected>Moderate — normal practice</option>
+        <option value="regular">Interview pace — real pressure</option>
+      </select>
+    </label>
+    <button class="primary gate-go" id="gateGo">Start case</button>
+    <div class="gate-hint" id="gateHint">Pressing Start also turns your speakers on for this tab.</div>
+  </div>
+</div>
+
+<header>
+  <div class="brand">case<span>craft</span></div>
+  <div class="meta">
+    <span class="pill" id="progress">&mdash;</span>
+    <label>Pace
+      <select id="speed">
+        <option value="slow">Slow</option>
+        <option value="moderate" selected>Moderate</option>
+        <option value="regular">Interview pace</option>
+      </select>
+    </label>
+  </div>
+</header>
+
+<main>
+ <div class="stage">
+  <div class="floor" id="floor"><span class="dot"></span><span id="floorText">Waiting</span></div>
+
+  <div class="orb-wrap">
+    <svg class="ring" id="ring" viewBox="0 0 132 132">
+      <circle class="track" cx="66" cy="66" r="62"></circle>
+      <circle class="prog"  cx="66" cy="66" r="62" stroke-dasharray="389.6" stroke-dashoffset="389.6"></circle>
+    </svg>
+    <div class="orb">
+      <svg id="icon" viewBox="0 0 24 24">
+        <path d="M12 3a3 3 0 0 0-3 3v6a3 3 0 0 0 6 0V6a3 3 0 0 0-3-3z"></path>
+        <path d="M5 11a7 7 0 0 0 14 0M12 18v3"></path>
+      </svg>
+    </div>
+  </div>
+
+  <div>
+    <div class="status" id="status">Connecting&hellip;</div>
+    <div class="clock" id="clock"></div>
+  </div>
+  <div class="sub" id="sub">Ask Claude to start a case. The question is spoken aloud &mdash; you will not see it.</div>
+
+  <div class="exhibit" id="exhibit"><h3 id="exTitle"></h3><div id="exBody"></div></div>
+
+  <div class="convo" id="convo"></div>
+
+  <div class="meter"><i id="meterFill"></i></div>
+  <div class="transcript" id="transcript"></div>
+
+  <div class="composer">
+    <textarea id="reply" placeholder="Type your answer, then press Enter to send (Shift+Enter for a new line)"></textarea>
+  </div>
+
+  <div class="feedback" id="feedback">
+    <div class="verdict" id="fverdict"></div>
+    <div class="fnote" id="fnote"></div>
+    <ul class="notes" id="fnotes"></ul>
+  </div>
+ </div>
+</main>
+
+<div class="controls">
+  <button class="primary" id="talk">Start talking <kbd>space</kbd></button>
+  <button id="edit">Type instead</button>
+  <button id="mute" disabled>Stop audio</button>
+  <button id="skip" title="Move on without answering — for testing the flow">Skip question</button>
+</div>
+
+<footer>
+  <span id="engine">Speech: checking&hellip;</span>
+  <span id="hint">Silence for 6s also submits &middot; space = done</span>
+</footer>
+
+<script>
+(() => {
+  "use strict";
+
+  const BUILD = "2026-08-03-loop";
+
+  const $ = id => document.getElementById(id);
+  const body = document.body;
+  const RING = 2 * Math.PI * 62;
+
+  const el = {
+    status:$("status"), sub:$("sub"), clock:$("clock"), progress:$("progress"),
+    transcript:$("transcript"), talk:$("talk"), edit:$("edit"), mute:$("mute"), skip:$("skip"),
+    convo:$("convo"), reply:$("reply"),
+    feedback:$("feedback"), fverdict:$("fverdict"), fnote:$("fnote"), fnotes:$("fnotes"),
+    exhibit:$("exhibit"), exTitle:$("exTitle"), exBody:$("exBody"),
+    ring:$("ring"), prog:document.querySelector(".prog"), engine:$("engine"), speed:$("speed"),
+  };
+
+  // Everything rendered from server state goes through textContent or explicit
+  // element construction — never markup concatenation. Case data is local and
+  // trusted, but transcripts are user speech and exhibits come from imported
+  // PDFs, so neither gets to author DOM.
+  const setText = (node, text) => { node.textContent = text == null ? "" : String(text); };
+  const clear = node => { while(node.firstChild) node.removeChild(node.firstChild); };
+
+  // ── state ────────────────────────────────────────────────────────────
+  let audioUnlocked = false;
+  // Mirrors the server's floor. stopListening() used to hardcode "waiting"
+  // here, which unlocked the talk button while the interviewer was still
+  // speaking — the exact half-duplex violation the lock exists to prevent.
+  let currentFloor = "waiting";
+  let listening = false, micBlocked = false, finalText = "", interimText = "";
+  let tick = null, silenceTimer = null, lastSpokenId = null;
+  const SILENCE_MS = 6000;   // generous: case candidates pause to think
+
+  // ── speech synthesis ─────────────────────────────────────────────────
+  // `rate` is a true multiplier, so the three pace settings are exact rather
+  // than approximate — the reason browser TTS beats a paid API here.
+  let voice = null;
+  function pickVoice(){
+    const all = speechSynthesis.getVoices();
+    if(!all.length) return;
+    const wanted = [/Ava.*Premium/i, /Siri/i, /Samantha/i, /Google US English/i,
+                    /Ava/i, /Allison/i, /en[-_]US/i];
+    for(const re of wanted){
+      const hit = all.find(v => re.test(v.name) || re.test(v.voiceURI));
+      if(hit){ voice = hit; return; }
+    }
+    voice = all.find(v => v.lang.startsWith("en")) || all[0];
+  }
+  speechSynthesis.onvoiceschanged = pickVoice; pickVoice();
+
+  let keepAlive = null, ackTimer = null, ackedFor = null;
+
+  function ack(id){
+    // Fire at most once per utterance, whichever path gets there first.
+    if(ackedFor === id) return;
+    ackedFor = id;
+    clearInterval(keepAlive); keepAlive = null;
+    clearTimeout(ackTimer);  ackTimer = null;
+    post("/spoken", {id: id});
+  }
+
+  function speak(text, rate, id){
+    speechSynthesis.cancel();
+    const u = new SpeechSynthesisUtterance(text);
+    u.rate = rate || 0.95;
+    u.pitch = 1.0;
+    if(voice) u.voice = voice;
+    u.onend = () => ack(id);
+    u.onerror = () => ack(id);
+    el.mute.disabled = false;
+
+    clearInterval(keepAlive);
+    clearTimeout(ackTimer);
+    ackedFor = null;
+
+    // Chrome stops firing `onend` on long utterances and in background tabs
+    // unless synthesis is nudged. Without this the interviewer appears to hang
+    // mid-sentence — the single worst failure this page can have.
+    keepAlive = setInterval(() => {
+      if(speechSynthesis.speaking && !speechSynthesis.paused) speechSynthesis.resume();
+      else if(!speechSynthesis.speaking) ack(id);
+    }, 3000);
+
+    // Belt and braces: never let a dropped `onend` strand the session. ~2.6
+    // words/sec at rate 1.0, plus generous slack.
+    const words = text.trim().split(/\s+/).length;
+    const estimate = (words / (2.6 * (rate || 0.95))) * 1000 + 4000;
+    ackTimer = setTimeout(() => ack(id), estimate);
+
+    speechSynthesis.speak(u);
+  }
+
+  // ── speech input ─────────────────────────────────────────────────────
+  // Two engines behind one interface. Browser recognition is the default
+  // (nothing to install, live interim text). If the server reports a local
+  // Whisper install, we record instead and transcribe on-device, so audio
+  // never leaves the machine — at the cost of no live transcript.
+  let useLocal = false;
+  let media = null, recorder = null, chunks = [], audioCtx = null, analyser = null, levelTimer = null;
+
+  fetch("/config").then(r => r.json()).then(cfg => {
+    if(cfg.local_stt && navigator.mediaDevices){
+      useLocal = true;
+      setText(el.engine, "Speech: on-device Whisper (" + cfg.model + ") — audio stays local");
+    }
+  }).catch(()=>{});
+
+  // ── LocalAgreement-2 ───────────────────────────────────────────────────
+  // Each live pass re-transcribes the whole utterance, and Whisper revises
+  // earlier words as it hears more context ("I scream" -> "ice cream"). Only
+  // commit a word once two consecutive passes agree on it; everything after
+  // that stays in a muted tail. The visible transcript is then append-only
+  // instead of flickering and rewriting itself while you talk.
+  let committed = [], lastPass = [], partialTimer = null, partialBusy = false;
+
+  function absorb(text){
+    const words = (text || "").trim().split(/\s+/).filter(Boolean);
+    if(!words.length) return;
+    let agree = 0;
+    while(agree < lastPass.length && agree < words.length &&
+          lastPass[agree].toLowerCase().replace(/[.,!?]/g, "") ===
+          words[agree].toLowerCase().replace(/[.,!?]/g, "")) agree++;
+    if(agree > committed.length) committed = words.slice(0, agree);
+    lastPass = words;
+    finalText = committed.join(" ") + (committed.length ? " " : "");
+    interimText = words.slice(committed.length).join(" ");
+    renderTranscript();
+  }
+
+  async function pollPartial(){
+    if(partialBusy || !listening || !chunks.length) return;
+    partialBusy = true;
+    try{
+      const blob = new Blob(chunks, {type: recorder ? recorder.mimeType : "audio/webm"});
+      const r = await fetch("/transcribe/partial", {method:"POST", body:blob});
+      const j = await r.json();
+      if(j && typeof j.transcript === "string") absorb(j.transcript);
+    } catch(_){ /* a dropped partial is cosmetic; the final pass is authoritative */ }
+    finally{ partialBusy = false; }
+  }
+
+  async function localStart(){
+    media = await navigator.mediaDevices.getUserMedia({audio:true});
+    chunks = [];
+    committed = []; lastPass = [];
+    recorder = new MediaRecorder(media);
+    recorder.ondataavailable = e => { if(e.data.size) chunks.push(e.data); };
+    recorder.start(1000);                       // emit a chunk every  second so partials have audio
+    clearInterval(partialTimer);
+    partialTimer = setInterval(pollPartial, 2500);
+
+    // No interim text in local mode, so silence has to come from the signal.
+    audioCtx = new (window.AudioContext || window.webkitAudioContext)();
+    analyser = audioCtx.createAnalyser();
+    analyser.fftSize = 512;
+    audioCtx.createMediaStreamSource(media).connect(analyser);
+    const buf = new Uint8Array(analyser.frequencyBinCount);
+    let quietSince = null, everSpoke = false;
+
+    levelTimer = setInterval(() => {
+      analyser.getByteTimeDomainData(buf);
+      let sum = 0;
+      for(let i=0;i<buf.length;i++){ const d = (buf[i]-128)/128; sum += d*d; }
+      const rms = Math.sqrt(sum / buf.length);
+      setMeter(Math.min(100, rms * 900));      // visible proof we can hear you
+      const loud = rms > 0.012;
+      if(loud){ everSpoke = true; quietSince = null; }
+      else if(everSpoke && quietSince === null){ quietSince = Date.now(); }
+      if(everSpoke && quietSince && Date.now() - quietSince > SILENCE_MS) submit();
+    }, 150);
+  }
+
+  function localTeardown(){
+    clearInterval(levelTimer); levelTimer = null;
+    clearInterval(partialTimer); partialTimer = null;
+    try{ if(recorder && recorder.state !== "inactive") recorder.stop(); }catch(_){}
+    try{ if(media) media.getTracks().forEach(t => t.stop()); }catch(_){}
+    try{ if(audioCtx) audioCtx.close(); }catch(_){}
+    media = null; audioCtx = null; analyser = null;
+  }
+
+  async function localSubmit(){
+    const done = new Promise(res => {
+      if(!recorder || recorder.state === "inactive") return res();
+      recorder.onstop = res;
+      try{ recorder.stop(); }catch(_){ res(); }
+    });
+    await done;
+    const blob = new Blob(chunks, {type: recorder ? recorder.mimeType : "audio/webm"});
+    const hadAudio = chunks.length > 0;
+    localTeardown();
+    if(!hadAudio){ nudgeEmpty(); listening = true; paintTalkButton(true); return; }
+    // Keep what we already showed; the final pass replaces it when it lands.
+    if(!finalText.trim() && !interimText.trim()) setText(el.transcript, "Transcribing…");
+    try{
+      const r = await fetch("/transcribe", {method:"POST", body:blob});
+      const j = await r.json();
+      const text = (j && j.transcript) || "";
+      setText(el.transcript, text);
+      post("/answer", {transcript: text});
+    } catch(_){
+      setText(el.transcript, "");
+      post("/answer", {transcript: ""});
+    }
+  }
+
+  const SR = window.SpeechRecognition || window.webkitSpeechRecognition;
+  let rec = null;
+  const supported = !!SR;
+
+  if(supported){
+    rec = new SR();
+    rec.continuous = true;
+    rec.interimResults = true;
+    rec.lang = "en-US";
+
+    rec.onresult = e => {
+      interimText = "";
+      for(let i = e.resultIndex; i < e.results.length; i++){
+        const chunk = e.results[i][0].transcript;
+        if(e.results[i].isFinal) finalText += chunk + " ";
+        else interimText += chunk;
+      }
+      renderTranscript();
+      resetSilence();
+    };
+    rec.onerror = e => {
+      if(e.error === "not-allowed" || e.error === "service-not-allowed"){
+        // Do NOT stop listening. The candidate's turn is still open on the
+        // server; killing it here leaves them staring at a "Start talking"
+        // button that can never work. Fall back to typing and keep the turn.
+        micBlocked = true;
+        clear(el.engine);
+        const w = document.createElement("span");
+        w.className = "warn";
+        setText(w, "Microphone unavailable — type your answer and press Enter.");
+        el.engine.appendChild(w);
+        if(listening) enableTyping();
+      }
+    };
+    // Chrome ends recognition on its own pauses; restart while we still want audio.
+    rec.onend = () => { if(listening){ try{ rec.start(); }catch(_){} } };
+
+    setText(el.engine, "Speech: browser (Web Speech API)");
+  } else {
+    clear(el.engine);
+    const w = document.createElement("span");
+    w.className = "warn";
+    setText(w, "No speech recognition here — use Chrome or Safari, or click Edit to type.");
+    el.engine.appendChild(w);
+  }
+
+  const setMeter = pct => { $("meterFill").style.width = Math.max(0, Math.min(100, pct)) + "%"; };
+
+  function enableTyping(){
+    el.transcript.contentEditable = "true";
+    el.transcript.focus();
+    clearTimeout(silenceTimer);
+    setText(el.sub, "Type your answer, then press Enter or Done.");
+  }
+
+  function renderTranscript(){
+    clear(el.transcript);
+    el.transcript.appendChild(document.createTextNode(finalText));
+    if(interimText){
+      const span = document.createElement("span");
+      span.className = "interim";
+      setText(span, interimText);
+      el.transcript.appendChild(span);
+    }
+  }
+
+  function resetSilence(){
+    clearTimeout(silenceTimer);
+    if(listening && (finalText.trim() || interimText.trim())){
+      silenceTimer = setTimeout(submit, SILENCE_MS);
+    }
+  }
+
+  // Painted from the SERVER's listening flag, never from a local variable.
+  // A local flag drifts the moment the mic errors or a race reorders events,
+  // and then the one control the candidate needs lies about what it does.
+  function paintTalkButton(isListening, floor){
+    floor = floor || currentFloor;
+    if(document.body.dataset.mode === "text"){
+      el.talk.disabled = !isListening;
+      el.talk.textContent = isListening ? "Send answer" : "Waiting for the interviewer…";
+      return;
+    }
+    const theirTurn = floor === "interviewer";
+    el.talk.disabled = theirTurn;               // you cannot talk over the interviewer
+    el.talk.textContent = theirTurn ? "Interviewer is speaking…"
+                        : isListening ? "Done — submit answer" : "Start talking";
+    if(!theirTurn){
+      const k = document.createElement("kbd");
+      k.textContent = "space";
+      el.talk.appendChild(k);
+    }
+  }
+
+  function startListening(){
+    finalText = ""; interimText = ""; renderTranscript();
+    el.transcript.contentEditable = "false";
+    listening = true;
+    paintTalkButton(true, "candidate");
+    if(useLocal){
+      setText(el.transcript, "");
+      localStart().catch(() => {
+        useLocal = false; micBlocked = true;    // fall back rather than strand the candidate
+        setText(el.engine, "Microphone unavailable — type your answer and press Enter.");
+        setText(el.transcript, "");
+        enableTyping();
+      });
+    } else if(supported){
+      try{ rec.start(); }catch(_){}
+    }
+  }
+
+  function stopListening(){
+    listening = false;
+    clearTimeout(silenceTimer);
+    if(!useLocal && supported){ try{ rec.stop(); }catch(_){} }
+    setMeter(0);
+    paintTalkButton(false, currentFloor);
+  }
+
+  function nudgeEmpty(){
+    setText(el.sub, "I didn't catch anything — say your answer, then press Done.");
+  }
+
+  function submit(){
+    if(!listening) return;
+    if(micBlocked || el.transcript.isContentEditable){
+      const typed = el.transcript.innerText.trim();
+      if(!typed){ nudgeEmpty(); return; }      // never post an empty answer
+      stopListening();
+      el.transcript.contentEditable = "false";
+      post("/answer", {transcript: typed});
+      return;
+    }
+    if(useLocal){
+      listening = false;
+      setMeter(0);
+      paintTalkButton(false, currentFloor);
+      localSubmit();
+      return;
+    }
+    const text = (finalText + " " + interimText).trim() || el.transcript.innerText.trim();
+    if(!text){ nudgeEmpty(); return; }          // keep the turn open
+    stopListening();
+    post("/answer", {transcript: text});
+  }
+
+  // ── timer ────────────────────────────────────────────────────────────
+  function startTimer(t){
+    stopTimer();
+    tick = setInterval(() => {
+      const elapsed = (Date.now()/1000) - t.started;
+      const frac = Math.min(elapsed / t.target, 1);
+      el.prog.style.strokeDashoffset = String(RING * (1 - frac));
+      el.ring.classList.toggle("over", elapsed > t.target);
+      setText(el.clock,
+        fmt(elapsed) + (elapsed > t.target ? " · over target" : " of ~" + fmt(t.target)));
+    }, 250);
+  }
+  function stopTimer(){
+    clearInterval(tick); tick = null;
+    el.prog.style.strokeDashoffset = String(RING);
+    el.ring.classList.remove("over");
+  }
+  const fmt = s => Math.floor(s/60) + ":" + String(Math.floor(s%60)).padStart(2,"0");
+
+  // ── exhibit rendering (DOM only) ─────────────────────────────────────
+  let renderedTurns = 0;
+  function renderDialogue(lines){
+    if(!lines) return;
+    if(lines.length < renderedTurns){        // a new session reset the log
+      clear(el.convo); renderedTurns = 0;
+    }
+    for(const line of lines.slice(renderedTurns)){
+      const div = document.createElement("div");
+      div.className = "turn " + (line.who === "candidate" ? "candidate" : "interviewer");
+      const who = document.createElement("div");
+      who.className = "who";
+      setText(who, line.who === "candidate" ? "You" : "Interviewer");
+      const body = document.createElement("div");
+      setText(body, line.text);
+      div.appendChild(who); div.appendChild(body);
+      el.convo.appendChild(div);
+    }
+    renderedTurns = lines.length;
+    const main = document.querySelector("main");
+    main.scrollTop = main.scrollHeight;
+  }
+
+  function sendTyped(){
+    const text = el.reply.value.trim();
+    if(!text) return;
+    el.reply.value = "";
+    post("/answer", {transcript: text});
+  }
+
+  function renderExhibit(ex){
+    setText(el.exTitle, ex.title || "Exhibit");
+    clear(el.exBody);
+
+    if(ex.text){
+      const body = document.createElement("div");
+      body.className = "exbody";
+      setText(body, ex.text);
+      el.exBody.appendChild(body);
+    }
+    if(ex.image_url){
+      const img = document.createElement("img");
+      img.src = ex.image_url;                 // same-origin path served by the room
+      img.alt = ex.title || "Exhibit";
+      el.exBody.appendChild(img);
+    }
+    if(Array.isArray(ex.data) && ex.data.length){
+      el.exBody.appendChild(buildTable(ex.data));
+    }
+    if(ex.note){
+      const p = document.createElement("div");
+      p.className = "note";
+      setText(p, ex.note);
+      el.exBody.appendChild(p);
+    }
+  }
+
+  function buildTable(rows){
+    const cols = Object.keys(rows[0]);
+    const table = document.createElement("table");
+    const thead = document.createElement("thead");
+    const hrow = document.createElement("tr");
+    for(const c of cols){
+      const th = document.createElement("th");
+      setText(th, c.replace(/_/g, " "));
+      hrow.appendChild(th);
+    }
+    thead.appendChild(hrow);
+    table.appendChild(thead);
+
+    const tbody = document.createElement("tbody");
+    for(const r of rows){
+      const tr = document.createElement("tr");
+      for(const c of cols){
+        const td = document.createElement("td");
+        setText(td, r[c]);
+        tr.appendChild(td);
+      }
+      tbody.appendChild(tr);
+    }
+    table.appendChild(tbody);
+    return table;
+  }
+
+  // ── render room state ────────────────────────────────────────────────
+  function apply(s){
+    // The start gate. Nothing is spoken until this is dismissed, and dismissing
+    // it is the click browsers require before they will play audio.
+    if(s.awaiting_start){
+      document.body.classList.add("gated");
+      setText($("gateTitle"), s.case_title || "Ready when you are");
+      setText($("gateHint"), (s.mode || "text") === "text"
+        ? "Text mode — the interviewer types, and so do you."
+        : "Pressing Start also turns your speakers on for this tab.");
+      if(s.speed) $("gateSpeed").value = s.speed;
+    } else {
+      document.body.classList.remove("gated");
+    }
+
+    setText(el.status, s.status || "");
+    setText(el.progress, s.progress || "—");
+    if(s.speed) el.speed.value = s.speed;
+
+    if(s.speak && s.speak.id !== lastSpokenId){
+      lastSpokenId = s.speak.id;
+      body.dataset.phase = "speaking";
+      setText(el.sub, "Listen carefully. You can ask me to repeat it.");
+      speak(s.speak.text, s.speak.rate, s.speak.id);
+    }
+
+    const mode = s.mode || "text";
+    document.body.dataset.mode = mode;
+    if(mode === "text"){
+      renderDialogue(s.dialogue);
+      const mine = !!s.listening;
+      el.reply.disabled = !mine;
+      el.reply.placeholder = mine
+        ? "Type your answer, then press Enter to send (Shift+Enter for a new line)"
+        : "Waiting for the interviewer…";
+      if(mine && document.activeElement !== el.reply) el.reply.focus();
+    }
+
+    const floor = s.floor || "waiting";
+    currentFloor = floor;
+    document.body.dataset.floor = floor;
+    setText($("floorText"),
+      floor === "candidate" ? "Your turn — you are being recorded"
+                            : "Interviewer — please listen");
+    paintTalkButton(!!s.listening, floor);
+
+    if(s.listening && !listening){
+      body.dataset.phase = "listening";
+      setText(el.sub, "Think out loud — interviewers score your reasoning, not just your conclusion.");
+      startListening();
+      if(s.timer) startTimer(s.timer);
+    } else if(!s.listening && listening){
+      stopListening();
+    }
+
+    if(!s.listening && !s.speak){
+      body.dataset.phase = s.feedback ? "idle" : "thinking";
+      if(!s.feedback) setText(el.sub, "Evaluating your answer…");
+      stopTimer();
+      setText(el.clock, "");
+    }
+
+    if(s.transcript && !listening){
+      finalText = s.transcript; interimText = ""; renderTranscript();
+    }
+
+    // The exhibit is the one thing a candidate is *meant* to see —
+    // a real interviewer slides paper across the table.
+    if(s.exhibit){
+      el.exhibit.classList.add("on");
+      renderExhibit(s.exhibit);
+    } else {
+      el.exhibit.classList.remove("on");
+    }
+
+    if(s.feedback){
+      const f = s.feedback;
+      el.feedback.className = "feedback on " + (f.outcome || "");
+      setText(el.fverdict,
+        String(f.outcome || "").toUpperCase() + " · " + Math.round((f.score || 0) * 100) + "%");
+      setText(el.fnote, f.note || "");
+      clear(el.fnotes);
+      const notes = (f.delivery && f.delivery.notes) || [];
+      for(const n of notes){
+        const li = document.createElement("li");
+        setText(li, n);
+        el.fnotes.appendChild(li);
+      }
+      body.dataset.phase = "idle";
+      setText(el.sub, "Claude will take it from here.");
+    } else {
+      el.feedback.classList.remove("on");
+    }
+  }
+
+  // ── wiring ───────────────────────────────────────────────────────────
+  const post = (path, payload) =>
+    fetch(path, {method:"POST", headers:{"Content-Type":"application/json"},
+                 body: JSON.stringify(payload)}).catch(()=>{});
+
+  el.reply.addEventListener("keydown", e => {
+    if(e.key === "Enter" && !e.shiftKey){ e.preventDefault(); sendTyped(); }
+  });
+
+  el.talk.onclick = () => {
+    if(document.body.dataset.mode === "text"){ sendTyped(); return; }
+    if(listening) submit();
+    else { post("/listen/start", {}); startListening(); }   // candidate-initiated
+  };
+  el.mute.onclick = () => { speechSynthesis.cancel(); ack(lastSpokenId); el.mute.disabled = true; };
+  el.edit.onclick = () => {
+    if(!listening){ post("/listen/start", {}); listening = true; paintTalkButton(true, "candidate"); }
+    enableTyping();
+  };
+  el.transcript.addEventListener("keydown", e => {
+    if(e.key === "Enter" && !e.shiftKey){ e.preventDefault(); submit(); }
+  });
+  el.skip.onclick = () => {
+    if(listening) stopListening();
+    setText(el.transcript, "");
+    post("/session/skip", {});
+  };
+
+  el.speed.onchange = () => post("/speed", {speed: el.speed.value});
+
+  $("gateGo").onclick = () => {
+    const chosen = $("gateSpeed").value;
+    el.speed.value = chosen;
+    post("/speed", {speed: chosen});
+    // Unlock audio inside the click handler — browsers only honour it here.
+    try{ speechSynthesis.speak(new SpeechSynthesisUtterance("")); }catch(_){}
+    audioUnlocked = true;
+    document.body.classList.remove("locked", "gated");
+    post("/session/start", {});
+  };
+
+  document.addEventListener("keydown", e => {
+    // While genuinely typing, space must type a space. Otherwise it submits —
+    // an editable field that merely has focus used to swallow the shortcut and
+    // make it look dead.
+    const typing = el.transcript.isContentEditable
+                && document.activeElement === el.transcript
+                && el.transcript.innerText.trim().length > 0;
+    if(typing) return;
+    if(e.code === "Space"){
+      e.preventDefault();
+      if(!el.talk.disabled) el.talk.onclick();
+    }
+  });
+
+  paintTalkButton(false);
+
+  // Tell the server which build this tab is running. A tab left open across a
+  // code change silently behaves like the old version — which cost a whole
+  // live run — so the server needs to be able to say so out loud.
+  const hello = () =>
+    fetch("/hello", {method:"POST", headers:{"Content-Type":"application/json"},
+                     body: JSON.stringify({build: BUILD, audio_unlocked: audioUnlocked})}).catch(()=>{});
+  hello();
+
+  const es = new EventSource("/events");
+  // EventSource auto-reconnects (including to a RESTARTED server, which has a
+  // fresh room that has never heard of this tab). Re-identify on every open,
+  // or a healthy tab gets flagged as "running old code — reload".
+  es.onopen = hello;
+  es.onmessage = e => { try{ apply(JSON.parse(e.data)); }catch(_){} };
+  es.onerror = () => { setText(el.status, "Disconnected — reopen from Claude."); };
+
+  // Browsers gate speech synthesis on a user gesture; warm it up on first click.
+  const warm = () => {
+    speechSynthesis.speak(new SpeechSynthesisUtterance(""));
+    audioUnlocked = true;
+    document.body.classList.remove("locked");
+    fetch("/hello", {method:"POST", headers:{"Content-Type":"application/json"},
+                     body: JSON.stringify({build: BUILD, audio_unlocked: true})}).catch(()=>{});
+    document.removeEventListener("click", warm);
+  };
+  document.addEventListener("click", warm);
+  document.body.classList.add("locked");
+})();
+</script>
+</body>
+</html>

@@ -1,0 +1,391 @@
+{
+  "id": "casecraft-meridian-coffee",
+  "title": "Meridian Coffee — US Market Entry",
+  "source": { "casebook": "casecraft original", "note": "Written for casecraft. Freely distributable." },
+
+  "meta": {
+    "format": "candidate_led",
+    "firm_style": "bcg",
+    "case_type": "market_entry",
+    "industry": "food_and_beverage",
+    "difficulty": 3,
+    "expected_minutes": 30,
+    "tags": ["market_sizing", "unit_economics", "breakeven", "competitive_dynamics"]
+  },
+
+  "prompt": {
+    "text": "Our client is Meridian Coffee, a chain of about six hundred coffee shops across Western Europe. They've been profitable and growing steadily at home for fifteen years. The board is now considering entering the United States, and they've asked us whether they should. Where would you like to start?",
+    "read_aloud": true
+  },
+
+  "clarifications": [
+    {
+      "id": "objective",
+      "topic": "what success would mean to the client",
+      "match": ["goal", "objective", "success", "why", "target", "return", "how much"],
+      "response": "The board wants a business that reaches two hundred million dollars of annual revenue within five years, at a margin no worse than their European operation."
+    },
+    {
+      "id": "european_economics",
+      "topic": "how the European business performs today",
+      "match": ["europe", "current", "existing", "today", "margin", "how profitable", "home market"],
+      "response": "In Europe they run about a fifteen percent operating margin. Average store does roughly one point two million dollars of revenue a year."
+    },
+    {
+      "id": "positioning",
+      "topic": "how Meridian positions itself and what makes it different",
+      "match": ["brand", "positioning", "differentiat", "premium", "what do they sell", "product", "unique"],
+      "response": "They're positioned as a premium, slow-service European café — table service, no drive-through, customers linger. Average ticket is about six dollars, which is higher than most US chains."
+    },
+    {
+      "id": "capital",
+      "topic": "what capital and appetite the client has for the entry",
+      "match": ["capital", "budget", "invest", "funding", "how many stores", "afford", "cash"],
+      "response": "They've earmarked three hundred million dollars for the entry over five years. They're open on how it's deployed."
+    },
+    {
+      "id": "us_competition",
+      "topic": "the competitive landscape in the United States",
+      "match": ["competit", "starbucks", "dunkin", "rivals", "who else", "market share", "players"],
+      "response": "The US market is concentrated at the top. Starbucks holds roughly forty percent of chain coffee, Dunkin about twenty. The rest is fragmented independents and regional chains."
+    },
+    {
+      "id": "prior_attempts",
+      "topic": "whether the client has expanded abroad before",
+      "match": ["before", "previous", "other markets", "international", "expanded", "history", "tried"],
+      "response": "They entered Poland and Portugal successfully. They tried Japan in 2019 and withdrew after two years — they never adapted the format to local habits."
+    }
+  ],
+
+  "exhibits": [
+    {
+      "id": "ex1",
+      "title": "US chain coffee: share and growth by segment",
+      "read_aloud_intro": "I'm going to show you a breakdown of the US chain coffee market by segment. Take a moment and tell me what stands out.",
+      "note": "Chain outlets only; independents excluded. Growth is 2021–2024 revenue CAGR.",
+      "data": [
+        { "segment": "Drive-through convenience", "share_pct": 46, "growth_pct": 8.2, "avg_ticket_usd": 4.10 },
+        { "segment": "Grab-and-go urban",        "share_pct": 31, "growth_pct": 3.1, "avg_ticket_usd": 5.20 },
+        { "segment": "Premium sit-down café",    "share_pct": 12, "growth_pct": 11.4, "avg_ticket_usd": 7.80 },
+        { "segment": "Other / regional",         "share_pct": 11, "growth_pct": 1.2, "avg_ticket_usd": 4.60 }
+      ]
+    }
+  ],
+
+  "questions": [
+    {
+      "id": "q1",
+      "order": 1,
+      "type": "structure",
+      "difficulty": 3,
+      "tags": ["mece", "market_entry", "hypothesis"],
+      "context": "A European premium coffee chain is considering entering the United States.",
+      "prompt": "How would you go about deciding whether Meridian should enter the US?",
+      "read_aloud": true,
+      "time_target_sec": 150,
+      "rubric": {
+        "kind": "buckets",
+        "components": [
+          {
+            "id": "market",
+            "label": "Market attractiveness — size, growth, and which segment they'd play in",
+            "weight": 2,
+            "must_have": true,
+            "accept": ["market size", "how big", "growth", "attractive", "segment", "demand"]
+          },
+          {
+            "id": "competition",
+            "label": "Competitive dynamics — who holds the market and whether there's room",
+            "weight": 2,
+            "must_have": true,
+            "accept": ["competition", "competitors", "starbucks", "incumbents", "crowded", "share"]
+          },
+          {
+            "id": "capability",
+            "label": "Client fit — does the European premium format actually travel?",
+            "weight": 2,
+            "must_have": true,
+            "accept": ["capability", "fit", "can they", "brand", "format", "translate", "adapt", "right to win"]
+          },
+          {
+            "id": "economics",
+            "label": "Economics — store-level unit economics and the investment required",
+            "weight": 2,
+            "must_have": true,
+            "accept": ["economics", "profitability", "cost", "margin", "investment", "returns", "payback"]
+          },
+          {
+            "id": "entry_mode",
+            "label": "Entry mode and risk — organic build, acquisition, or franchise",
+            "weight": 1,
+            "accept": ["how to enter", "acquisition", "franchise", "organic", "partnership", "joint venture", "risk"]
+          }
+        ],
+        "bonus": [
+          { "id": "hypothesis", "label": "Opens with a hypothesis rather than a checklist", "weight": 1 },
+          { "id": "prioritized", "label": "Says which bucket they'd attack first and why", "weight": 1 }
+        ]
+      },
+      "probes": [
+        "Good — anything else you'd want in there?",
+        "You've covered whether the market is attractive. What about whether this particular client can win in it?",
+        "Think about the client side: they run a premium, slow-service European format. Is that a question worth asking?"
+      ],
+      "model_answer": "Four areas. First, is the market attractive — how big is US out-of-home coffee, how fast is it growing, and which segment would Meridian play in. Second, competitive dynamics — the US is dominated by Starbucks and Dunkin, so is there a defensible niche. Third, does Meridian have a right to win — their premium slow-service format is very different from US habits, and they've failed once already in Japan for exactly that reason. Fourth, the economics — store-level unit economics and whether $300M gets them to $200M of revenue. I'd start with capability, because if the format doesn't travel, the market size doesn't matter."
+    },
+
+    {
+      "id": "q2",
+      "order": 2,
+      "type": "math",
+      "difficulty": 3,
+      "tags": ["market_sizing", "assumptions", "segmentation"],
+      "context": "You're sizing a consumer market in the United States.",
+      "prompt": "Before we go further, I'd like you to size it. How much do Americans spend per year on coffee bought outside the home? Walk me through your logic.",
+      "read_aloud": true,
+      "time_target_sec": 240,
+      "rubric": {
+        "kind": "buckets",
+        "components": [
+          {
+            "id": "population",
+            "label": "Starts from US population (~330 million) rather than guessing a top-line number",
+            "weight": 2,
+            "must_have": true,
+            "accept": ["330 million", "population", "US has about", "300 million", "350 million"]
+          },
+          {
+            "id": "penetration",
+            "label": "Applies an explicit coffee-drinker / out-of-home buyer penetration",
+            "weight": 2,
+            "must_have": true,
+            "accept": ["percent drink", "penetration", "of those", "half of them", "coffee drinkers", "not everyone"]
+          },
+          {
+            "id": "frequency",
+            "label": "States a purchase frequency — cups per week or per day",
+            "weight": 2,
+            "must_have": true,
+            "accept": ["per week", "per day", "cups a week", "times a week", "frequency", "how often"]
+          },
+          {
+            "id": "price",
+            "label": "Applies an average price per cup",
+            "weight": 2,
+            "must_have": true,
+            "accept": ["dollars a cup", "average price", "per cup", "ticket", "$4", "$5"]
+          },
+          {
+            "id": "annualize",
+            "label": "Converts cleanly to an annual figure",
+            "weight": 1,
+            "must_have": true,
+            "accept": ["per year", "annual", "52 weeks", "365", "times 52"]
+          },
+          {
+            "id": "sanity_check",
+            "label": "Sanity-checks the answer against something known",
+            "weight": 2,
+            "accept": ["sanity", "does that make sense", "check that", "Starbucks does", "reasonable", "compare that to", "feels about right"]
+          }
+        ],
+        "bonus": [
+          { "id": "segmented", "label": "Segments the population rather than using one blended average", "weight": 1 },
+          { "id": "round_numbers", "label": "Uses round numbers deliberately to keep the arithmetic clean", "weight": 1 }
+        ]
+      },
+      "probes": [
+        "Talk me through how you'd break that down.",
+        "You've got a number of buyers — how often are they buying, and at what price?",
+        "Now step back: does that number feel right to you? What could you check it against?"
+      ],
+      "model_answer": "Start with 330 million Americans. Say 60 percent drink coffee, so about 200 million. Of those, maybe half buy out-of-home at least weekly — call it 100 million buyers. At an average of 3 cups a week, that's 300 million cups a week, or roughly 15.6 billion cups a year. At about 4 dollars a cup, that's a bit over 60 billion dollars a year. Sanity check: Starbucks does around 25 billion in the US, and they're roughly 40 percent of chain coffee, which implies chain coffee is around 60 billion — and chains are most but not all of out-of-home. So 60 billion is the right order of magnitude."
+    },
+
+    {
+      "id": "q3",
+      "order": 3,
+      "type": "math",
+      "difficulty": 4,
+      "tags": ["breakeven", "unit_economics", "contribution_margin"],
+      "context": "You're looking at store-level economics for a coffee chain.",
+      "prompt": "Let's look at a single store. A Meridian location costs four hundred thousand dollars to build out, and six hundred thousand dollars a year to operate — that's rent, labour, utilities, everything. The average customer spends six dollars, and gross margin on that is seventy percent. How many customers a day does a store need just to cover its operating costs?",
+      "read_aloud": true,
+      "time_target_sec": 180,
+      "rubric": {
+        "kind": "numeric",
+        "expected": 391,
+        "units": "customers per day",
+        "tolerance_pct": 5,
+        "steps": [
+          { "id": "contribution", "label": "$6 × 70% = $4.20 contribution per customer", "value": 4.2 },
+          { "id": "annual_customers", "label": "$600,000 ÷ $4.20 ≈ 142,857 customers/year", "value": 142857 }
+        ],
+        "common_errors": [
+          {
+            "value": 274,
+            "diagnosis": "You divided by the $6 ticket rather than the $4.20 contribution. Only the margin covers fixed costs — the cost of goods goes out the door with the coffee."
+          },
+          {
+            "value": 142857,
+            "diagnosis": "That's customers per year. The question asked per day — divide by 365."
+          },
+          {
+            "value": 652,
+            "diagnosis": "You folded the $400,000 build-out into the annual figure. The question asked about operating costs only; build-out is capital, recovered over the store's life."
+          },
+          {
+            "value": 913,
+            "diagnosis": "Looks like you treated 70% as the cost rather than the margin — that inverts the economics. Contribution is $4.20, not $1.80."
+          }
+        ]
+      },
+      "probes": [
+        "How much of each six-dollar sale is actually available to cover fixed costs?",
+        "You've got the annual customer count — the question asked for a daily figure.",
+        "Careful with the build-out. Is that an operating cost or a capital cost?"
+      ],
+      "model_answer": "Each customer contributes 6 dollars times 70 percent, so 4 dollars 20. To cover 600,000 of operating cost you need 600,000 divided by 4.20, which is about 143,000 customers a year. Over 365 days that's roughly 390 customers a day — call it 400. That's about one customer every ninety seconds for a twelve-hour day, which is demanding for a sit-down café where people linger."
+    },
+
+    {
+      "id": "q4",
+      "order": 4,
+      "type": "exhibit",
+      "difficulty": 3,
+      "tags": ["chart_reading", "segmentation", "strategic_read"],
+      "exhibit_id": "ex1",
+      "context": "You're shown a segment breakdown of the US chain coffee market.",
+      "prompt": "What do you make of this?",
+      "read_aloud": true,
+      "time_target_sec": 150,
+      "rubric": {
+        "kind": "buckets",
+        "components": [
+          {
+            "id": "premium_fastest",
+            "label": "Premium sit-down is the fastest-growing segment at 11.4%, despite being smallest",
+            "weight": 3,
+            "must_have": true,
+            "accept": ["premium", "fastest growing", "11.4", "growing quickest", "smallest but"]
+          },
+          {
+            "id": "premium_fits",
+            "label": "That segment is precisely where Meridian's format sits — the $7.80 ticket matches theirs",
+            "weight": 3,
+            "must_have": true,
+            "accept": ["that's where meridian", "matches their", "their format", "fits", "ticket is similar", "7.80"]
+          },
+          {
+            "id": "small_base",
+            "label": "But it's only 12% of the market — a small pond even if it's growing",
+            "weight": 2,
+            "accept": ["only 12", "small", "12 percent", "niche", "limited size", "small base"]
+          },
+          {
+            "id": "drive_through",
+            "label": "Drive-through dominates at 46% and is growing 8% — the US mainstream is convenience, not lingering",
+            "weight": 2,
+            "accept": ["drive through", "46", "biggest", "convenience", "mainstream"]
+          }
+        ],
+        "bonus": [
+          { "id": "quantifies_opportunity", "label": "Sizes the premium segment against the $200M revenue target", "weight": 2 },
+          { "id": "ties_to_decision", "label": "Ties the read back to the entry decision rather than narrating the table", "weight": 1 }
+        ]
+      },
+      "probes": [
+        "Anything else standing out?",
+        "Which of these segments would Meridian actually be competing in?",
+        "You've identified the segment. Is it big enough to matter, given what the board wants?"
+      ],
+      "model_answer": "The premium sit-down segment is growing at 11.4 percent, far faster than anything else, and its 7 dollar 80 average ticket is close to Meridian's six dollars — so that's their natural home, and it's the healthiest part of the market. The catch is that it's only 12 percent of chain coffee. If chain coffee is roughly 60 billion, premium is around 7 billion, and the board wants 200 million of revenue — so they'd need roughly 3 percent of a segment they have no presence in. Meanwhile 46 percent of the market is drive-through convenience, which tells you the US mainstream wants speed, not lingering. That's the strategic tension: the segment that fits them is the one that's growing, but it's small."
+    },
+
+    {
+      "id": "q5",
+      "order": 5,
+      "type": "brainstorm",
+      "difficulty": 3,
+      "tags": ["risks", "creativity", "operational"],
+      "context": "A European coffee chain is entering the US market.",
+      "prompt": "What worries you most about this move?",
+      "read_aloud": true,
+      "time_target_sec": 120,
+      "rubric": {
+        "kind": "buckets",
+        "components": [
+          {
+            "id": "format_travel",
+            "label": "The premium slow-service format may not suit US habits — and they already failed in Japan for that reason",
+            "weight": 3,
+            "must_have": true,
+            "accept": ["format", "won't translate", "japan", "habits", "culture", "slow service", "americans want"]
+          },
+          {
+            "id": "incumbents",
+            "label": "Entrenched incumbents with scale, real estate and loyalty programmes",
+            "weight": 2,
+            "accept": ["starbucks", "incumbent", "competition", "scale", "loyalty", "entrenched"]
+          },
+          {
+            "id": "brand_unknown",
+            "label": "Zero brand awareness — European prestige doesn't cross the Atlantic for free",
+            "weight": 2,
+            "accept": ["brand", "unknown", "awareness", "nobody knows", "marketing spend"]
+          },
+          {
+            "id": "cost_base",
+            "label": "US cost base — real estate in dense urban sites, and labour",
+            "weight": 2,
+            "accept": ["real estate", "rent", "labor", "labour", "wages", "cost base", "expensive locations"]
+          },
+          {
+            "id": "operations",
+            "label": "Supply chain and operations — roasting, distribution, hiring and training at distance",
+            "weight": 1,
+            "accept": ["supply chain", "sourcing", "roasting", "distribution", "hiring", "training", "management attention"]
+          }
+        ],
+        "bonus": [
+          { "id": "prioritized", "label": "Says which risk is the killer rather than listing evenly", "weight": 2 },
+          { "id": "mitigation", "label": "Pairs at least one risk with a way to test or mitigate it", "weight": 1 }
+        ]
+      },
+      "probes": [
+        "Good. What else?",
+        "Think about their own history — is there anything in the client's past that should worry you?",
+        "Of everything you've named, which one actually kills the deal?"
+      ],
+      "model_answer": "The one that worries me most is whether the format travels. They run a slow, sit-down, linger-over-your-coffee café, and 46 percent of the US market is drive-through — and they've already withdrawn from Japan for exactly this reason, having failed to adapt. That's a pattern, not an accident. Beyond that: no brand awareness, so customer acquisition is expensive; entrenched incumbents with better real estate and loyalty programmes; a high US cost base in the dense urban locations the format needs; and the operational lift of standing up roasting and distribution at distance. I'd test the format first with a small number of company-owned stores in two contrasting cities before committing the 300 million."
+    },
+
+    {
+      "id": "q6",
+      "order": 6,
+      "type": "synthesis",
+      "difficulty": 4,
+      "tags": ["recommendation", "answer_first", "risks"],
+      "context": "You've analysed a European coffee chain's potential US entry.",
+      "prompt": "The CEO is about to walk into the board meeting. She has two minutes. What do you tell her?",
+      "read_aloud": true,
+      "time_target_sec": 120,
+      "rubric": {
+        "kind": "open",
+        "criteria": [
+          { "id": "answer_first", "label": "Opens with a clear recommendation, not a build-up", "weight": 3 },
+          { "id": "conditional", "label": "Takes a defensible position — a staged or conditional entry rather than a flat yes/no", "weight": 2 },
+          { "id": "quantified", "label": "Cites the numbers derived: ~$60B market, 12% premium segment, ~390 customers/day breakeven", "weight": 3 },
+          { "id": "segment_logic", "label": "Names the premium segment as the only viable entry point and says why", "weight": 2 },
+          { "id": "risk_and_test", "label": "Names the format-travel risk and proposes a way to test it before full commitment", "weight": 2 }
+        ],
+        "model_answer": "My recommendation is a staged entry, not a full commitment. Don't deploy the 300 million now. Out-of-home coffee in the US is roughly a 60 billion dollar market, but the only segment that fits Meridian's premium sit-down format is 12 percent of it, growing 11 percent a year — call it 7 billion. The board's 200 million target is about 3 percent of that segment, which is achievable but not easy. At store level they need roughly 390 customers a day just to cover operating costs, which is demanding for a café where people linger. The real risk is the format itself: 46 percent of the US market is drive-through, and Meridian has already withdrawn from Japan after failing to adapt. So: put 30 to 40 million into ten to fifteen company-owned stores across two contrasting cities, hold them for eighteen months, and make the full commitment conditional on hitting that 390-a-day number. If the format doesn't travel, we've learned it for 40 million instead of 300."
+      },
+      "probes": [
+        "Start with your answer, then support it.",
+        "Can you put numbers behind that?",
+        "What would have to be true for you to be wrong?"
+      ]
+    }
+  ]
+}

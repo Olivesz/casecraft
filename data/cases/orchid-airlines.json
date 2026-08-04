@@ -1,0 +1,288 @@
+{
+  "id": "casecraft-orchid-airlines",
+  "title": "Orchid Airlines — Falling Profits",
+  "source": { "casebook": "casecraft original", "note": "Written for casecraft. Freely distributable." },
+
+  "meta": {
+    "format": "interviewer_led",
+    "firm_style": "mckinsey",
+    "case_type": "profitability",
+    "industry": "airlines",
+    "difficulty": 3,
+    "expected_minutes": 30,
+    "tags": ["profit_equation", "cost_structure", "capacity", "chart_reading"]
+  },
+
+  "prompt": {
+    "text": "Our client is Orchid Airlines, a regional carrier operating short-haul routes in the United States. Over the last three years their revenue has grown steadily, but profits have fallen by nearly forty percent. The CEO has asked us to find out why, and what they should do about it. How would you approach this?",
+    "read_aloud": true
+  },
+
+  "clarifications": [
+    {
+      "id": "geography",
+      "topic": "where the client operates",
+      "match": ["where", "geography", "region", "which markets", "routes", "international"],
+      "response": "Orchid operates 40 routes, all within the continental US. No international exposure."
+    },
+    {
+      "id": "objective",
+      "topic": "the client's goal or success metric",
+      "match": ["goal", "objective", "target", "success", "how much", "timeline"],
+      "response": "The CEO wants to restore profits to their 2021 level within two years. No specific dollar target beyond that."
+    },
+    {
+      "id": "competition",
+      "topic": "the competitive landscape",
+      "match": ["competitors", "competition", "market share", "rivals", "low cost"],
+      "response": "Two low-cost carriers entered Orchid's largest markets in 2022. Orchid's share of those routes fell from 45% to 33%."
+    },
+    {
+      "id": "fleet",
+      "topic": "the fleet and how aircraft are financed",
+      "match": ["fleet", "planes", "aircraft", "own or lease", "capex"],
+      "response": "Orchid leases all 60 of its aircraft on long-term fixed contracts. No aircraft were added or retired in the period."
+    },
+    {
+      "id": "revenue_mix",
+      "topic": "where revenue comes from besides tickets",
+      "match": ["ancillary", "baggage", "cargo", "loyalty", "other revenue", "revenue mix"],
+      "response": "About 85% of revenue is ticket sales; the rest is baggage fees and a small cargo business. That mix has been stable."
+    }
+  ],
+
+  "exhibits": [
+    {
+      "id": "ex1",
+      "title": "Cost per available seat mile (CASM), 2021–2024",
+      "reveal_at": "q4",
+      "asset": "exhibits/orchid_ex1.png",
+      "read_aloud_intro": "I'm going to show you a chart of Orchid's cost per available seat mile, broken out by category, from 2021 to 2024. Take a moment to look at it and tell me what you see.",
+      "data": [
+        { "year": 2021, "fuel": 3.1, "labor": 4.2, "aircraft_lease": 2.8, "other": 1.9 },
+        { "year": 2022, "fuel": 4.4, "labor": 4.3, "aircraft_lease": 2.8, "other": 2.0 },
+        { "year": 2023, "fuel": 5.6, "labor": 4.9, "aircraft_lease": 2.8, "other": 2.1 },
+        { "year": 2024, "fuel": 5.9, "labor": 5.4, "aircraft_lease": 2.8, "other": 2.1 }
+      ]
+    }
+  ],
+
+  "questions": [
+    {
+      "id": "q1",
+      "order": 1,
+      "type": "structure",
+      "difficulty": 2,
+      "tags": ["mece", "profit_equation"],
+      "context": "A regional US airline has growing revenue but profits down forty percent over three years.",
+      "prompt": "What factors would you want to look at to understand why Orchid's profits are declining?",
+      "read_aloud": true,
+      "time_target_sec": 120,
+      "rubric": {
+        "kind": "buckets",
+        "components": [
+          {
+            "id": "revenue",
+            "label": "Revenue drivers — passengers flown × price per ticket",
+            "weight": 2,
+            "must_have": true,
+            "accept": ["revenue", "price", "ticket price", "yield", "load factor", "passengers", "volume", "how much they charge"]
+          },
+          {
+            "id": "fixed_costs",
+            "label": "Fixed costs — aircraft leases, gate fees, salaried crew",
+            "weight": 2,
+            "must_have": true,
+            "accept": ["fixed cost", "overhead", "leases", "gates", "salaries", "costs that don't change"]
+          },
+          {
+            "id": "variable_costs",
+            "label": "Variable costs — fuel, per-passenger service, landing fees",
+            "weight": 2,
+            "must_have": true,
+            "accept": ["variable cost", "fuel", "per passenger", "cost per flight", "scales with"]
+          },
+          {
+            "id": "competition",
+            "label": "External — low-cost entrants pressuring price and share",
+            "weight": 1,
+            "accept": ["competition", "competitors", "new entrants", "market share", "industry"]
+          }
+        ],
+        "bonus": [
+          { "id": "mece", "label": "Structure laid out upfront and MECE", "weight": 1 },
+          { "id": "hypothesis", "label": "Leads with a hypothesis rather than a laundry list", "weight": 1 }
+        ]
+      },
+      "probes": [
+        "That's a reasonable start. Is there anything else you'd want to look at?",
+        "You've covered one side of the profit equation — what about the other half?",
+        "Think about which of Orchid's costs scale with each additional passenger, and which stay flat no matter how full the plane is."
+      ],
+      "model_answer": "Profit = revenue − cost. On revenue: passengers flown (a function of routes, frequency, capacity, and load factor) times price per ticket, plus ancillary revenue. On cost: fixed costs like aircraft leases, gate fees and salaried crew, versus variable costs like fuel, landing fees and per-passenger service. Externally, new low-cost entrants could be pressuring both price and share. Given revenue is growing while profit falls, the hypothesis should lean toward cost."
+    },
+
+    {
+      "id": "q2",
+      "order": 2,
+      "type": "math",
+      "difficulty": 3,
+      "tags": ["capacity", "revenue_build", "load_factor"],
+      "context": "You're working with a regional US airline.",
+      "prompt": "Let's size the revenue. Orchid flies 40 routes, six flights per route per day. Each plane seats 150, and they fly at an 80 percent load factor. The average ticket sells for 220 dollars. What is Orchid's annual ticket revenue?",
+      "read_aloud": true,
+      "time_target_sec": 150,
+      "rubric": {
+        "kind": "numeric",
+        "expected": 2312640000,
+        "units": "USD per year",
+        "tolerance_pct": 2,
+        "steps": [
+          { "id": "flights_per_day", "label": "40 routes × 6 = 240 flights/day", "value": 240 },
+          { "id": "pax_per_flight", "label": "150 seats × 80% = 120 passengers/flight", "value": 120 },
+          { "id": "pax_per_day", "label": "240 × 120 = 28,800 passengers/day", "value": 28800 },
+          { "id": "revenue_per_day", "label": "28,800 × $220 = $6.34M/day", "value": 6336000 }
+        ],
+        "common_errors": [
+          {
+            "value": 2890800000,
+            "diagnosis": "You used all 150 seats — the 80% load factor wasn't applied. Planes fly with empty seats, and that gap is usually where the case is hiding."
+          },
+          {
+            "value": 6336000,
+            "diagnosis": "That's daily revenue. The question asked for annual — multiply by 365."
+          },
+          {
+            "value": 385440000,
+            "diagnosis": "Looks like you annualized by 60 (a month of flying) rather than 365."
+          }
+        ]
+      },
+      "probes": [
+        "Walk me through how you got there.",
+        "How many passengers are actually on each plane?"
+      ],
+      "model_answer": "40 routes × 6 flights = 240 flights per day. 150 seats at 80% load = 120 passengers per flight, so 28,800 passengers per day. At $220 each that's about $6.34M per day, or roughly $2.3 billion per year."
+    },
+
+    {
+      "id": "q3",
+      "order": 3,
+      "type": "math",
+      "difficulty": 4,
+      "tags": ["breakeven", "margin", "sensitivity"],
+      "context": "A regional airline has annual ticket revenue of about 2.3 billion dollars.",
+      "prompt": "Orchid's total annual costs are 2.1 billion dollars, and 60 percent of that is fixed. If a competitor forces them to cut the average ticket price by 10 percent, and they hold passenger volume flat, what happens to their profit?",
+      "read_aloud": true,
+      "time_target_sec": 180,
+      "rubric": {
+        "kind": "numeric",
+        "expected": -18624000,
+        "units": "USD per year (profit after the price cut)",
+        "tolerance_pct": 15,
+        "steps": [
+          { "id": "profit_before", "label": "$2.313B − $2.1B ≈ $213M profit today", "value": 212640000 },
+          { "id": "revenue_after", "label": "10% price cut on flat volume → $2.081B revenue", "value": 2081376000 },
+          { "id": "revenue_lost", "label": "$231M of revenue lost", "value": 231264000 },
+          { "id": "costs_unchanged", "label": "Volume is flat, so costs stay at $2.1B", "value": 2100000000 }
+        ],
+        "common_errors": [
+          {
+            "value": 231264000,
+            "diagnosis": "That's the revenue lost, not the resulting profit. The question asked where profit lands."
+          },
+          {
+            "value": 65376000,
+            "diagnosis": "You scaled variable costs down by 10% along with price. A price cut isn't a volume cut — volume is flat, so every cost line is unchanged."
+          }
+        ]
+      },
+      "probes": [
+        "What's their profit today, before the price cut?",
+        "If volume is flat, what happens to costs?",
+        "Be careful — a price cut isn't a volume cut. Which of those two moves costs?"
+      ],
+      "model_answer": "Today: $2.313B revenue − $2.1B cost ≈ $213M profit. A 10% price cut on flat volume removes $231M of revenue. Volume is unchanged so costs stay at $2.1B. Profit goes from +$213M to roughly −$19M — the price cut alone pushes them into a loss. The fixed-cost split matters for what they can do about it, not for this calculation."
+    },
+
+    {
+      "id": "q4",
+      "order": 4,
+      "type": "exhibit",
+      "difficulty": 3,
+      "tags": ["chart_reading", "cost_structure"],
+      "exhibit_id": "ex1",
+      "context": "You're shown a cost breakdown for a regional airline.",
+      "prompt": "What do you take away from this chart?",
+      "read_aloud": true,
+      "time_target_sec": 120,
+      "rubric": {
+        "kind": "buckets",
+        "components": [
+          {
+            "id": "fuel_spike",
+            "label": "Fuel is the biggest mover — up ~90% (3.1 → 5.9), the single largest driver",
+            "weight": 3,
+            "must_have": true,
+            "accept": ["fuel", "fuel costs", "biggest increase", "nearly doubled"]
+          },
+          {
+            "id": "labor_rise",
+            "label": "Labor also up ~29% (4.2 → 5.4), accelerating after 2022",
+            "weight": 2,
+            "must_have": true,
+            "accept": ["labor", "wages", "crew costs", "salaries rising"]
+          },
+          {
+            "id": "lease_flat",
+            "label": "Aircraft lease cost is flat at 2.8 — fixed contracts, not the problem",
+            "weight": 2,
+            "accept": ["lease", "flat", "unchanged", "constant", "not a driver"]
+          },
+          {
+            "id": "total_quantified",
+            "label": "Quantifies the total: CASM up from 12.0 to 16.2, roughly 35%",
+            "weight": 2,
+            "accept": ["total", "overall", "12 to 16", "35%", "in aggregate"]
+          }
+        ],
+        "bonus": [
+          { "id": "ties_back", "label": "Ties the read back to the profit question rather than just narrating the chart", "weight": 1 }
+        ]
+      },
+      "probes": [
+        "Anything else standing out?",
+        "Can you quantify that — how much has total cost per seat mile moved?",
+        "Is there a line on this chart that is notably *not* moving? What does that tell you?"
+      ],
+      "model_answer": "Total CASM rose from 12.0 to 16.2 cents, about 35%. Fuel is the dominant driver, up roughly 90% from 3.1 to 5.9. Labor is second, up about 29% with the steepest jump after 2022. Aircraft lease costs are perfectly flat at 2.8 — consistent with long-term fixed leases, so that's not where the problem is. This confirms the cost-side hypothesis: revenue growth is being outrun by fuel and labor inflation."
+    },
+
+    {
+      "id": "q5",
+      "order": 5,
+      "type": "synthesis",
+      "difficulty": 4,
+      "tags": ["recommendation", "answer_first", "risks"],
+      "prompt": "The CEO just walked into the room and has two minutes. What do you tell her?",
+      "read_aloud": true,
+      "time_target_sec": 120,
+      "rubric": {
+        "kind": "open",
+        "criteria": [
+          { "id": "answer_first", "label": "Leads with the recommendation, not the analysis", "weight": 3 },
+          { "id": "quantified", "label": "Cites specific figures — ~$2.3B revenue, 35% CASM increase, fuel up 90%", "weight": 2 },
+          { "id": "root_cause", "label": "Names cost inflation (fuel, labor) as the driver, not revenue weakness", "weight": 3 },
+          { "id": "actions", "label": "Proposes at least two concrete actions (fuel hedging, route rationalization, ancillary revenue)", "weight": 2 },
+          { "id": "risks", "label": "Names a risk and a mitigation — e.g. cutting routes cedes share to the entrants", "weight": 2 }
+        ],
+        "model_answer": "Recommendation: attack the cost side, don't chase the price war. Revenue is growing — roughly $2.3B — but cost per available seat mile is up 35% since 2021, driven almost entirely by fuel (up 90%) and labor (up 29%). Leases are flat, so there's no structural capex issue. Three moves: hedge fuel to stop the bleeding, rationalize the routes where low-cost entrants have taken share and margins are now negative, and grow ancillary revenue, which is only 15% of the mix. The main risk is that pulling out of contested routes hands those markets permanently to the entrants — so route exits should be selective and tested, not wholesale."
+      },
+      "probes": [
+        "Start with your answer, then support it.",
+        "Can you put numbers behind that?",
+        "What could go wrong with that recommendation?"
+      ]
+    }
+  ]
+}

@@ -1,0 +1,8 @@
+{
+  "mcpServers": {
+    "casecraft": {
+      "command": "/Users/oliverzhang/Projects/casecraft/.venv/bin/python",
+      "args": ["-m", "casecraft"]
+    }
+  }
+}
