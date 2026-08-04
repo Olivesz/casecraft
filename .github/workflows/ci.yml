@@ -16,4 +16,7 @@ jobs:
           cache: pip
           cache-dependency-path: pyproject.toml
       - run: pip install -e ".[dev]"
+      # The ingest glyph repair consults /usr/share/dict/words — present on
+      # macOS by default, absent on Ubuntu runners.
+      - run: sudo apt-get update -q && sudo apt-get install -y -q wamerican
       - run: pytest -q
