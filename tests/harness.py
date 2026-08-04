@@ -55,6 +55,8 @@ class SimulatedCandidate(threading.Thread):
         self._ready = threading.Event()
         self._last_speak: str | None = None
         self._armed_at: str | None = None
+        self._awaiting_pickup = False
+        self._last_status = ""
         self._dialogue_seen = 0
         self._lock = threading.Lock()
 
@@ -119,10 +121,33 @@ class SimulatedCandidate(threading.Thread):
         if state.get("feedback"):
             self.feedback.append(state["feedback"])
 
+        # The interviewer took our last answer. `listen` and `collect_answer`
+        # both mark the pickup ("…considering your answer…") before they
+        # return, so that status is the one reliable "your answer landed"
+        # signal the page ever sees. It must be the TRANSITION into that
+        # status, though: unrelated updates re-broadcast the whole state, so a
+        # stale "considering" (or a lingering feedback payload) re-reads as a
+        # fresh pickup and un-gates the next answer one turn early.
+        status = state.get("status") or ""
+        if (self._awaiting_pickup and status != self._last_status
+                and "considering" in status.lower()):
+            self._awaiting_pickup = False
+        self._last_status = status
+
         # The mic opened — answer, unless we're playing a candidate who won't.
+        #
+        # One answer per arm token, and never while the previous answer sits
+        # unclaimed. The server mints a fresh `timer.started` on every
+        # defensive re-arm (`say`, `listen` and `collect_answer` all re-arm),
+        # not only on real questions — so on a starved runner the SSE consumer
+        # catches up on several tokens in a burst, two scripted answers land
+        # in the utterance queue together, and the next drain() merges them
+        # into one transcript. That eats the script early and starves the last
+        # question. A real candidate doesn't speak again until the interviewer
+        # has taken what they said; neither does this one.
         timer = state.get("timer") or {}
         token = f"{timer.get('started')}"
-        if state.get("listening") and self._armed_at != token:
+        if state.get("listening") and self._armed_at != token and not self._awaiting_pickup:
             self._armed_at = token
             if self.mute:
                 return
@@ -133,6 +158,7 @@ class SimulatedCandidate(threading.Thread):
             time.sleep(self.think)
             client.post(f"{self.base}/answer", json={"transcript": reply})
             self.said.append(reply)
+            self._awaiting_pickup = True
 
     # ── candidate-initiated actions ──────────────────────────────────────── #
 
