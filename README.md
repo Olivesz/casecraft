@@ -19,6 +19,8 @@ isn't a case interview.
 Then, in Claude: *"run me through a case"* · *"drill me on hard math"* ·
 *"what am I bad at?"*
 
+![The interview room mid-case — the Orchid Airlines profitability case, question 1 of 5](docs/room.png)
+
 ---
 
 ## How it works
